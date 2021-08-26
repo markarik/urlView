@@ -23,7 +23,7 @@ class SimpleUrlPreview extends StatefulWidget {
   /// Height of the preview
   final double previewHeight;
 
-  /// elevation of the preview
+  /// elevation of the preview card
   final double elevation;
 
   /// Whether or not to show close button for the preview

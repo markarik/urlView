@@ -50,6 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
         children: <Widget>[
           SimpleUrlPreview(
             isShowLink: true,
+            
             url: 'https://github.com/markarik/',
             bgColor: Theme.of(context).accentColor,
             // isClosable: true,
