@@ -23,6 +23,9 @@ class SimpleUrlPreview extends StatefulWidget {
   /// Height of the preview
   final double previewHeight;
 
+  /// elevation of the preview
+  final double elevation;
+
   /// Whether or not to show close button for the preview
   final bool? isClosable;
 
@@ -56,6 +59,7 @@ class SimpleUrlPreview extends StatefulWidget {
   SimpleUrlPreview({
     required this.url,
     this.previewHeight = 130.0,
+    this.elevation = 5,
     this.isClosable,
     this.bgColor,
     this.titleStyle,
@@ -83,6 +87,7 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
   bool _isVisible = true;
   late bool _isClosable;
   double? _previewHeight;
+  double? _elevation;
   Color? _bgColor;
   TextStyle? _titleStyle;
   int? _titleLines;
@@ -108,6 +113,7 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
 
   void _initialize() {
     _previewHeight = widget.previewHeight;
+    _elevation = widget.elevation;
     _descriptionStyle = widget.descriptionStyle;
     _descriptionLines = widget.descriptionLines;
     _titleStyle = widget.titleStyle;
@@ -175,7 +181,6 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
   Widget build(BuildContext context) {
     _isClosable = widget.isClosable ?? false;
     _isShowLink = widget.isShowLink ?? false;
-
     _bgColor = widget.bgColor ?? Theme.of(context).primaryColor;
     _imageLoaderColor =
         widget.imageLoaderColor ?? Theme.of(context).accentColor;
@@ -220,7 +225,7 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
 
   Card _buildPreviewCard(BuildContext context) {
     return Card(
-      elevation: 5,
+      elevation: _elevation,
       color: _bgColor,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
