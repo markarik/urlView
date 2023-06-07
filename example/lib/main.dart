@@ -1,33 +1,37 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:simple_url_preview/simple_url_preview.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Simple Url Preview Demo',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
         primaryColor: Colors.blue,
-        accentColor: Colors.white,
         visualDensity: VisualDensity.adaptivePlatformDensity,
+        colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.blue)
+            .copyWith(secondary: Colors.white),
       ),
-      home: MyHomePage(title: 'Simple Url Preview Demo'),
+      home: const MyHomePage(title: 'Simple Url Preview Demo'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key? key, this.title}) : super(key: key);
-
   final String? title;
 
+  const MyHomePage({super.key, this.title});
+
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
@@ -49,18 +53,17 @@ class _MyHomePageState extends State<MyHomePage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           SimpleUrlPreview(
-            isShowLink: true,
-            
-            url: 'https://github.com/markarik/',
-            bgColor: Theme.of(context).accentColor,
-            // isClosable: true,
+            elevation: 0,
+            url: _url,
+            bgColor: Colors.transparent,
+            isClosable: true,
             titleLines: 2,
             descriptionLines: 3,
             imageLoaderColor: Colors.white,
             previewHeight: 150,
-            previewContainerPadding: EdgeInsets.all(10),
-            onTap: () {},
-            titleStyle: TextStyle(
+            previewContainerPadding: const EdgeInsets.all(10),
+            onTap: () => log('Hello Flutter URL Preview'),
+            titleStyle: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.red,
@@ -72,6 +75,15 @@ class _MyHomePageState extends State<MyHomePage> {
             siteNameStyle: TextStyle(
               fontSize: 14,
               color: Theme.of(context).primaryColor,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: TextField(
+              onChanged: (newValue) => _onUrlChanged(newValue),
+              decoration: const InputDecoration(
+                hintText: 'Enter the url',
+              ),
             ),
           ),
         ],

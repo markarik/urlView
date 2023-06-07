@@ -1,10 +1,11 @@
-library simple_url_preview;
+library simple_url_preview_v2;
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
 import 'package:http/http.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:simple_url_preview/widgets/preview_description.dart';
 import 'package:simple_url_preview/widgets/preview_image.dart';
 import 'package:simple_url_preview/widgets/preview_site_name.dart';
@@ -12,7 +13,6 @@ import 'package:simple_url_preview/widgets/preview_title.dart';
 import 'package:string_validator/string_validator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Provides URL preview
 class SimpleUrlPreview extends StatefulWidget {
   /// Whether or not to show link for the preview
   final bool? isShowLink;
@@ -56,7 +56,7 @@ class SimpleUrlPreview extends StatefulWidget {
   /// onTap URL preview, by default opens URL in default browser
   final VoidCallback? onTap;
 
-  SimpleUrlPreview({
+  const SimpleUrlPreview({
     required this.url,
     this.previewHeight = 130.0,
     this.elevation = 5,
@@ -79,7 +79,7 @@ class SimpleUrlPreview extends StatefulWidget {
             'The description lines should be less than or equal to 3 and not equal to 0');
 
   @override
-  _SimpleUrlPreviewState createState() => _SimpleUrlPreviewState();
+  State<SimpleUrlPreview> createState() => _SimpleUrlPreviewState();
 }
 
 class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
@@ -99,10 +99,13 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
   VoidCallback? _onTap;
   late bool _isShowLink;
 
+  late bool _isLoadingData;
+
   @override
   void initState() {
     super.initState();
     _getUrlData();
+    _isLoadingData = false;
   }
 
   @override
@@ -124,6 +127,8 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
   }
 
   void _getUrlData() async {
+    _isLoadingData = true;
+
     if (!isURL(widget.url)) {
       setState(() {
         _urlPreviewData = null;
@@ -133,7 +138,7 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
 
     var response = await get(Uri.parse(widget.url));
     if (response.statusCode != 200) {
-      if (!this.mounted) {
+      if (!mounted) {
         return;
       }
       setState(() {
@@ -148,7 +153,7 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
     _extractOGData(document, data, 'og:site_name');
     _extractOGData(document, data, 'og:image');
 
-    if (!this.mounted) {
+    if (!mounted) {
       return;
     }
 
@@ -158,6 +163,7 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
         _isVisible = true;
       });
     }
+    _isLoadingData = false;
   }
 
   void _extractOGData(Document document, Map data, String parameter) {
@@ -170,8 +176,10 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
   }
 
   void _launchURL() async {
-    if (await canLaunch(Uri.encodeFull(widget.url))) {
-      await launch(Uri.encodeFull(widget.url));
+    final Uri url = Uri.parse(widget.url);
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
     } else {
       throw 'Could not launch ${widget.url}';
     }
@@ -183,26 +191,40 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
     _isShowLink = widget.isShowLink ?? false;
     _bgColor = widget.bgColor ?? Theme.of(context).primaryColor;
     _imageLoaderColor =
-        widget.imageLoaderColor ?? Theme.of(context).accentColor;
+        widget.imageLoaderColor ?? Theme.of(context).colorScheme.secondary;
     _initialize();
 
     if (_urlPreviewData == null || !_isVisible) {
-      return SizedBox();
+      return const SizedBox();
     }
 
-    return Container(
-      padding: _previewContainerPadding,
-      height: _previewHeight,
-      child: Stack(
-        children: [
-          GestureDetector(
-            onTap: _onTap,
-            child: _buildPreviewCard(context),
-          ),
-          _buildClosablePreview(),
-        ],
-      ),
-    );
+    return _isLoadingData
+        ? Shimmer.fromColors(
+            // Wrap your widget into Shimmer.
+            baseColor: Colors.grey[200]!,
+            highlightColor: Colors.grey[350]!,
+            child: Card(
+              elevation: 1.0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SizedBox(
+                height: _previewHeight,
+              ),
+            ))
+        : Container(
+            padding: _previewContainerPadding,
+            height: _previewHeight,
+            child: Stack(
+              children: [
+                GestureDetector(
+                  onTap: _onTap,
+                  child: _buildPreviewCard(context),
+                ),
+                _buildClosablePreview(),
+              ],
+            ),
+          );
   }
 
   Widget _buildClosablePreview() {
@@ -210,7 +232,7 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
         ? Align(
             alignment: Alignment.topRight,
             child: IconButton(
-              icon: Icon(
+              icon: const Icon(
                 Icons.clear,
               ),
               onPressed: () {
@@ -220,17 +242,18 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
               },
             ),
           )
-        : SizedBox();
+        : const SizedBox();
   }
 
   Card _buildPreviewCard(BuildContext context) {
+    print(_isLoadingData);
     return Card(
       elevation: _elevation,
       color: _bgColor,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Container(
+          SizedBox(
             width: (MediaQuery.of(context).size.width -
                     MediaQuery.of(context).padding.left -
                     MediaQuery.of(context).padding.right) *
@@ -242,39 +265,36 @@ class _SimpleUrlPreviewState extends State<SimpleUrlPreview> {
           ),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.all(8),
+              padding: const EdgeInsets.all(8),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   PreviewTitle(
                       _urlPreviewData!['og:title'],
-                      _titleStyle == null
-                          ? TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: Theme.of(context).accentColor,
-                            )
-                          : _titleStyle,
+                      _titleStyle ??
+                          TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
                       _titleLines),
                   PreviewDescription(
                     _urlPreviewData!['og:description'],
-                    _descriptionStyle == null
-                        ? TextStyle(
-                            fontSize: 14,
-                            color: Theme.of(context).accentColor,
-                          )
-                        : _descriptionStyle,
+                    _descriptionStyle ??
+                        TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
                     _descriptionLines,
                   ),
                   PreviewSiteName(
                     _isShowLink ? widget.url : _urlPreviewData!['og:site_name'],
-                    _siteNameStyle == null
-                        ? TextStyle(
-                            fontSize: 14,
-                            color: Theme.of(context).accentColor,
-                          )
-                        : _siteNameStyle,
+                    _siteNameStyle ??
+                        TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
                   ),
                 ],
               ),
